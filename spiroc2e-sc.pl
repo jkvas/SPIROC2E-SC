@@ -171,7 +171,7 @@ sub bitReorder{ #change from MSB to LSB and vice versa.
     return $newValue;
 }
 
-sub bitInvert{
+sub bitInvert{ #invert bits in n-bit number
     my ($value,$bits)=@_;
     return (~$value) & ((1<<$bits)-1);
 }
