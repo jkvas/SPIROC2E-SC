@@ -26,16 +26,16 @@ foreach my $file ( &getSelectionFilenames() ) {    #loop through all ASIC files
     print $file, " -> ", &getOutFilename($file), "\n";
 
     #&setGlobalTrigThr( \@spiroc_sc, 280 );
-#    print "Trigger Threshold=", &getGlobalTrigThr( \@spiroc_sc ), "\t";
-#    print "Gain THreshold=",    &getGainThr( \@spiroc_sc ),       "\n";
+    #    print "Trigger Threshold=", &getGlobalTrigThr( \@spiroc_sc ), "\t";
+    #    print "Gain THreshold=",    &getGainThr( \@spiroc_sc ),       "\n";
 
     #    &setIntValue(\@spiroc_sc,17,8,&getIntValue(\@spiroc_sc,17,8)-1);
     #&setChipID( \@spiroc_sc, &getChipID( \@spiroc_sc ) - 1 );
     #&write_sc( &getOutFilename($file), @spiroc_sc );
-#    print "hold=", &getHoldTrigger( \@spiroc_sc ), ",", &getHoldValid( \@spiroc_sc ), ",", &getHoldRst( \@spiroc_sc ), "\n";
+    #    print "hold=", &getHoldTrigger( \@spiroc_sc ), ",", &getHoldValid( \@spiroc_sc ), ",", &getHoldRst( \@spiroc_sc ), "\n";
 
     for my $ch ( 0 .. 35 ) {
-
+       print &getDiscrChanMask(\@spiroc_sc,$ch);
         #print "Idac ch", $ch, "=", &getIdac( \@spiroc_sc, $ch ), " enabled=", &getIdacEnabled( \@spiroc_sc, $ch ), "\n ";
 
         #setHGPreamp( \@spiroc_sc, $ch, 23 );
@@ -46,13 +46,14 @@ foreach my $file ( &getSelectionFilenames() ) {    #loop through all ASIC files
         #		print sprintf( " % .6 b ", &getLGPreamp( \@spiroc_sc, $ch ) ), " ";
         #		print &getIntValue( \@spiroc_sc, 366 + 15 * $ch + 12, 1 ), " ";
         #		print &getIntValue( \@spiroc_sc, 366 + 15 * $ch + 13, 1 ), " ";
-        		if (&getIntValue( \@spiroc_sc, 366 + 15 * $ch + 14, 1 ) ==1) {print "preamp ",$ch,"disabled.";} 
-        		#print &getIntValue( \@spiroc_sc, 366 + 15 * $ch + 14, 1 ), " \n ";
+        if ( &getIntValue( \@spiroc_sc, 366 + 15 * $ch + 14, 1 ) == 1 ) { print "preamp ", $ch, "disabled."; }
+
+        #print &getIntValue( \@spiroc_sc, 366 + 15 * $ch + 14, 1 ), " \n ";
     }
 
     #print &getIntValue(\@spiroc_sc,17,8)," \t ";
     #print &getChipID(\@spiroc_sc)," \t ";
-    #print " \n ";
+    print " \n ";
 }
 
 sub getSelectionFilenames {
@@ -269,6 +270,9 @@ sub getHoldRst { return &bitReorder( &getIntValue( $_[0], 1164, 6 ), 6 ); }
 
 #param: SC, value
 sub setHoldRst { &setIntValue( $_[0], 1164, 6, &bitReorder( $_[1], 6 ) ); }
+
+#param SC, ch
+sub getDiscrChanMask { return &getIntValue( $_[0], 959 + $_[1], 1 ); }
 
 #Labview Register Name	bits	Register description	Subadd
 #GC: sw_ramp_on_adc	1		0
