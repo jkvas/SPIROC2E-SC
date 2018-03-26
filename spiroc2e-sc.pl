@@ -5,39 +5,34 @@ use File::Basename;
 use File::Path qw/make_path/;
 
 #my $baseSrcDir        = "/home/kvas/pool/SPIROC2E-SC/reference";
-my $baseSrcDir = "./reference";
-my $baseDstDir = "./output";
-my $dirNames   = "Module";
-my $srcSuffix  = "AT";
-my $dstSuffix  = "AT";
+my $baseSrcDir = "./reference";    #source directory with module directories
+my $baseDstDir = "./output";       #output destination directories
+my $dirNames   = "Module";         #module directory name (without number)
+
+#my $srcSuffix  = "AT";
+my $srcSuffix = "AT";
+my $dstSuffix = "AT";
 
 #my $selection_modules = "1";
 my $selection_modules = "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40";
 my $selection_slabs   = "2,3";
 
-#my $selection_asics = "01";
-my $selection_asics = "01,02,03,04,04,05,06,07,08";
-my $overwriting     = 0;
-
 #my $selection_asics = "01,02";
+my $selection_asics = "01,02,03,04,05,06,07,08";
+my $overwriting     = 0;                           #do not modify from 0, otherwise will overwrite without single question
 
-foreach my $file ( &getSelectionFilenames() ) {    #loop through all ASIC files
-    my @spiroc_sc = &load_sc($file);               #load the slowcontrol bit array
-    print $file, " -> ", &getOutFilename($file), "\n";
+#following loop iterates over ASIC files
+foreach my $file ( &getSelectionFilenames( $selection_modules, $selection_slabs, $selection_asics ) ) {    #loop through all ASIC files
+    my @spiroc_sc = &load_sc($file);   #loads the SC bitstream                                                                   #load the slowcontrol bit array
+    print $file, " -> ", &getOutFilename($file), "\n";    #print source and output filenames with paths
 
-    #&setGlobalTrigThr( \@spiroc_sc, 280 );
-    #    print "Trigger Threshold=", &getGlobalTrigThr( \@spiroc_sc ), "\t";
-    #    print "Gain THreshold=",    &getGainThr( \@spiroc_sc ),       "\n";
-
-    #    &setIntValue(\@spiroc_sc,17,8,&getIntValue(\@spiroc_sc,17,8)-1);
-    #&setChipID( \@spiroc_sc, &getChipID( \@spiroc_sc ) - 1 );
-    #&write_sc( &getOutFilename($file), @spiroc_sc );
-    #    print "hold=", &getHoldTrigger( \@spiroc_sc ), ",", &getHoldValid( \@spiroc_sc ), ",", &getHoldRst( \@spiroc_sc ), "\n";
+    # -- place of asic-wise modifications --
 
     for my $ch ( 0 .. 35 ) {
-       print &getDiscrChanMask(\@spiroc_sc,$ch);
-        #print "Idac ch", $ch, "=", &getIdac( \@spiroc_sc, $ch ), " enabled=", &getIdacEnabled( \@spiroc_sc, $ch ), "\n ";
 
+        # -- place of channel-wise modifications --
+        #print &getDiscrChanMask( \@spiroc_sc, $ch );
+        #print "Idac ch", $ch, "=", &getIdac( \@spiroc_sc, $ch ), " enabled=", &getIdacEnabled( \@spiroc_sc, $ch ), "\n ";
         #setHGPreamp( \@spiroc_sc, $ch, 23 );
         #setLGPreamp( \@spiroc_sc, $ch, 23 );
         #		setPreampDisabled( \@spiroc_sc, $ch, 0 );
@@ -46,17 +41,30 @@ foreach my $file ( &getSelectionFilenames() ) {    #loop through all ASIC files
         #		print sprintf( " % .6 b ", &getLGPreamp( \@spiroc_sc, $ch ) ), " ";
         #		print &getIntValue( \@spiroc_sc, 366 + 15 * $ch + 12, 1 ), " ";
         #		print &getIntValue( \@spiroc_sc, 366 + 15 * $ch + 13, 1 ), " ";
-        if ( &getIntValue( \@spiroc_sc, 366 + 15 * $ch + 14, 1 ) == 1 ) { print "preamp ", $ch, "disabled."; }
+        if ( &getIntValue( \@spiroc_sc, 366 + 15 * $ch + 14, 1 ) == 1 ) { print "preamp ", $ch, "disabled.\n"; }
 
         #print &getIntValue( \@spiroc_sc, 366 + 15 * $ch + 14, 1 ), " \n ";
     }
 
+    #&setGlobalTrigThr( \@spiroc_sc, 280 );
+    #    print "Trigger Threshold=", &getGlobalTrigThr( \@spiroc_sc ), "\t";
+    #    print "Gain THreshold=",    &getGainThr( \@spiroc_sc ),       "\n";
+
+    #    &setIntValue(\@spiroc_sc,17,8,&getIntValue(\@spiroc_sc,17,8)-1);
+    #&setChipID( \@spiroc_sc, &getChipID( \@spiroc_sc ) - 1 );
+
+    #    print "hold=", &getHoldTrigger( \@spiroc_sc ), ",", &getHoldValid( \@spiroc_sc ), ",", &getHoldRst( \@spiroc_sc ), "\n";
     #print &getIntValue(\@spiroc_sc,17,8)," \t ";
     #print &getChipID(\@spiroc_sc)," \t ";
-    print " \n ";
+    #print " \n ";
+
+    #&write_sc( &getOutFilename($file), @spiroc_sc ); # write the SC to the file (will ask to overwrite);
 }
 
+# --internal functions --
+
 sub getSelectionFilenames {
+    my ( $selection_modules, $selection_slabs, $selection_asics ) = @_;
     my @scfiles = ();                                                   #list of filetered filenames
     my @list_dirs = grep ( -d && /$dirNames/, glob "$baseSrcDir/*" );
     foreach my $dir (@list_dirs) {
@@ -271,8 +279,11 @@ sub getHoldRst { return &bitReorder( &getIntValue( $_[0], 1164, 6 ), 6 ); }
 #param: SC, value
 sub setHoldRst { &setIntValue( $_[0], 1164, 6, &bitReorder( $_[1], 6 ) ); }
 
-#param SC, ch
+#param SC, ch, return: 0=normal operation, 1=masked
 sub getDiscrChanMask { return &getIntValue( $_[0], 959 + $_[1], 1 ); }
+
+#param SC, ch, value (0=normal operation, 1=masked)
+sub setDiscrChanMask { &setIntValue( $_[0], 959 + $_[1], 1, $_[2] ); }
 
 #Labview Register Name	bits	Register description	Subadd
 #GC: sw_ramp_on_adc	1		0
