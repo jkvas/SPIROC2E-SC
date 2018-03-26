@@ -5,13 +5,14 @@ use File::Basename;
 use File::Path qw/make_path/;
 
 #my $baseSrcDir        = "/home/kvas/pool/SPIROC2E-SC/reference";
-my $baseSrcDir = "./reference";    #source directory with module directories
+my $baseSrcDir = "/home/calice/TB2018/mount_frankenstein/C/Users/calice/Desktop/cosmics_slowcontrols";    #source directory with module directories. no "/" at the end!
+#my $baseSrcDir = "./reference";
 my $baseDstDir = "./output";       #output destination directories
 my $dirNames   = "Module";         #module directory name (without number)
 
 #my $srcSuffix  = "AT";
-my $srcSuffix = "AT";
-my $dstSuffix = "AT";
+my $srcSuffix = "ET_IC";
+my $dstSuffix = "ET_IC_AG350_TR260_LG1200";
 
 #my $selection_modules = "1";
 my $selection_modules = "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40";
@@ -23,42 +24,24 @@ my $overwriting     = 0;                           #do not modify from 0, otherw
 
 #following loop iterates over ASIC files
 foreach my $file ( &getSelectionFilenames( $selection_modules, $selection_slabs, $selection_asics ) ) {    #loop through all ASIC files
-    my @spiroc_sc = &load_sc($file);   #loads the SC bitstream                                                                   #load the slowcontrol bit array
+    my @spiroc_sc = &load_sc($file);   #loads the SC bitstream
     print $file, " -> ", &getOutFilename($file), "\n";    #print source and output filenames with paths
 
     # -- place of asic-wise modifications --
+    &setGainThr(\@spiroc_sc,350);
+    &setGlobalTrigThr(\@spiroc_sc,260);
 
     for my $ch ( 0 .. 35 ) {
-
         # -- place of channel-wise modifications --
+	&setLGPreamp(\@spiroc_sc,$ch,48);
+
         #print &getDiscrChanMask( \@spiroc_sc, $ch );
         #print "Idac ch", $ch, "=", &getIdac( \@spiroc_sc, $ch ), " enabled=", &getIdacEnabled( \@spiroc_sc, $ch ), "\n ";
         #setHGPreamp( \@spiroc_sc, $ch, 23 );
         #setLGPreamp( \@spiroc_sc, $ch, 23 );
-        #		setPreampDisabled( \@spiroc_sc, $ch, 0 );
-        #		print " ch ", $ch, " = ";
-        #		print sprintf( " % .6 b ", &getHGPreamp( \@spiroc_sc, $ch ) ), " ";
-        #		print sprintf( " % .6 b ", &getLGPreamp( \@spiroc_sc, $ch ) ), " ";
-        #		print &getIntValue( \@spiroc_sc, 366 + 15 * $ch + 12, 1 ), " ";
-        #		print &getIntValue( \@spiroc_sc, 366 + 15 * $ch + 13, 1 ), " ";
-        if ( &getIntValue( \@spiroc_sc, 366 + 15 * $ch + 14, 1 ) == 1 ) { print "preamp ", $ch, "disabled.\n"; }
-
-        #print &getIntValue( \@spiroc_sc, 366 + 15 * $ch + 14, 1 ), " \n ";
+        #setPreampDisabled( \@spiroc_sc, $ch, 0 );      
     }
-
-    #&setGlobalTrigThr( \@spiroc_sc, 280 );
-    #    print "Trigger Threshold=", &getGlobalTrigThr( \@spiroc_sc ), "\t";
-    #    print "Gain THreshold=",    &getGainThr( \@spiroc_sc ),       "\n";
-
-    #    &setIntValue(\@spiroc_sc,17,8,&getIntValue(\@spiroc_sc,17,8)-1);
-    #&setChipID( \@spiroc_sc, &getChipID( \@spiroc_sc ) - 1 );
-
-    #    print "hold=", &getHoldTrigger( \@spiroc_sc ), ",", &getHoldValid( \@spiroc_sc ), ",", &getHoldRst( \@spiroc_sc ), "\n";
-    #print &getIntValue(\@spiroc_sc,17,8)," \t ";
-    #print &getChipID(\@spiroc_sc)," \t ";
-    #print " \n ";
-
-    #&write_sc( &getOutFilename($file), @spiroc_sc ); # write the SC to the file (will ask to overwrite);
+    &write_sc( &getOutFilename($file), @spiroc_sc ); # write the SC to the file (will ask to overwrite);
 }
 
 # --internal functions --
@@ -66,18 +49,21 @@ foreach my $file ( &getSelectionFilenames( $selection_modules, $selection_slabs,
 sub getSelectionFilenames {
     my ( $selection_modules, $selection_slabs, $selection_asics ) = @_;
     my @scfiles = ();                                                   #list of filetered filenames
-    my @list_dirs = grep ( -d && /$dirNames/, glob "$baseSrcDir/*" );
-    foreach my $dir (@list_dirs) {
+    my @list_dirs = grep ( -d && /$dirNames\d+$/, glob "$baseSrcDir/*" );
+    foreach my $dir (@list_dirs) { # for each module directory
+	#next unless $dir =~ /$dirNames\d+$/;
         ( my $moduleNo ) = $dir =~ /\D(\d+)$/;
         grep( /^$moduleNo$/, split( /,/, $selection_modules ) ) || next;
-        ( my $suffix_dir ) = ( grep( -d && /\/$srcSuffix$/, glob "$dir/*" ) );
+        ( my $suffix_dir ) = ( grep( -d && /\/$srcSuffix$/, glob "$dir/*" ) ); #only specified suffix directory (i.e. /AT)
+	if (! defined $suffix_dir) { next; } #do not proceed further if directory with suffix not found
+	#print $suffix_dir ,"\n";
         my @slab_dirs = grep ( -d && /\/slab\d$/, glob "$suffix_dir/*" );
-        foreach my $slab_dir (@slab_dirs) {
+        foreach my $slab_dir (@slab_dirs) {# for each slab subdirectory
             ( my $slabNo ) = $slab_dir =~ /slab(\d)$/;
             grep( /^$slabNo$/, split( /,/, $selection_slabs ) ) || next;
-            my @asic_files =
-              grep ( -T && /SC_SP2b_ASIC\d+.txt/, glob "$slab_dir/*" );
-            foreach my $asic_file (@asic_files) {
+            my @asic_files = grep ( -T && /SC_SP2b_ASIC\d+.txt/, glob "$slab_dir/*" );
+            foreach my $asic_file (@asic_files) {#for each ASIC file
+		#print "#found: ",$asic_file,"\n";
                 ( my $asicIndex ) = $asic_file =~ /ASIC(\d+).txt/;
                 grep( /^$asicIndex$/, split( /,/, $selection_asics ) ) || next;
                 push( @scfiles, $asic_file );
