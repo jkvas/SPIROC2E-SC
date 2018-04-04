@@ -11,8 +11,8 @@ my $baseDstDir = "./output";       #output destination directories
 my $dirNames   = "Module";         #module directory name (without number)
 
 #my $srcSuffix  = "AT";
-my $srcSuffix = "ET_IC";
-my $dstSuffix = "ET_IC_AG350_TR260_LG1200";
+my $srcSuffix = "AT";
+my $dstSuffix = "AT_IC_AG350_TR280_LG1200";
 
 #my $selection_modules = "1";
 my $selection_modules = "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40";
@@ -29,11 +29,12 @@ foreach my $file ( &getSelectionFilenames( $selection_modules, $selection_slabs,
 
     # -- place of asic-wise modifications --
     &setGainThr(\@spiroc_sc,350);
-    &setGlobalTrigThr(\@spiroc_sc,260);
+    &setGlobalTrigThr(\@spiroc_sc,280);
+    &setSwitchTdc(\@spiroc_sc,1); #switches off the TDC
 
     for my $ch ( 0 .. 35 ) {
         # -- place of channel-wise modifications --
-	&setLGPreamp(\@spiroc_sc,$ch,48);
+	&setLGPreamp(\@spiroc_sc,$ch,48); #48 is 1200fF
 
         #print &getDiscrChanMask( \@spiroc_sc, $ch );
         #print "Idac ch", $ch, "=", &getIdac( \@spiroc_sc, $ch ), " enabled=", &getIdacEnabled( \@spiroc_sc, $ch ), "\n ";
@@ -134,13 +135,11 @@ sub write_sc {
             $byte = 0;
         }
     }
-
     # print "\n";
 }
 
 sub prompt {
     my $question = $_[0];
-
     #    local $| = 1; # activate autoflush to immediately show the prompt
     print $question, " [Y/N/A] (yes/no/all):";
     chomp( my $answer = <STDIN> );
@@ -152,13 +151,11 @@ sub prompt {
 sub getOutFilename {
     my ($srcFilename) = @_;
     my ( $moduleNo, $suffix, $slabNo, $asicNo ) = $srcFilename =~ /$dirNames(\d+)\/([^\/]+)\/slab(\d+)\/.+ASIC(\d+)\./;
-
     # print "module=",$moduleNo,"\n";
     # print "suffix=",$suffix,"\n";
     # print "slab=",$slabNo,"\n";
     # print "asic=",$asicNo+0,"\n";
     my $outfile = $baseDstDir . "/Module" . $moduleNo . "/" . $dstSuffix . "/slab" . $slabNo . "/SC_SP2b_ASIC" . $asicNo . ".txt";
-
     #    print $outfile,"\n";
     return $outfile;
 }
@@ -270,6 +267,12 @@ sub getDiscrChanMask { return &getIntValue( $_[0], 959 + $_[1], 1 ); }
 
 #param SC, ch, value (0=normal operation, 1=masked)
 sub setDiscrChanMask { &setIntValue( $_[0], 959 + $_[1], 1, $_[2] ); }
+
+#param SC (0=TDC will be converted, 1=other gain will be converted)
+sub getSwitchTdc { return &getIntValue( $_[0], 958 , 1 ); }
+
+#param SC,value (0=TDC will be converted, 1=other gain will be converted)
+sub setSwitchTdc {&setIntValue( $_[0], 958, 1,$_[1] ); }
 
 #Labview Register Name	bits	Register description	Subadd
 #GC: sw_ramp_on_adc	1		0
