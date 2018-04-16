@@ -5,14 +5,14 @@ use File::Basename;
 use File::Path qw/make_path/;
 
 #my $baseSrcDir        = "/home/kvas/pool/SPIROC2E-SC/reference";
-my $baseSrcDir = "/home/calice/TB2018/mount_frankenstein/C/Users/calice/Desktop/cosmics_slowcontrols";    #source directory with module directories. no "/" at the end!
-#my $baseSrcDir = "./reference";
+#my $baseSrcDir = "/home/calice/TB2018/mount_frankenstein/C/Users/calice/Desktop/cosmics_slowcontrols";    #source directory with module directories. no "/" at the end!
+my $baseSrcDir = "./reference";
 my $baseDstDir = "./output";       #output destination directories
 my $dirNames   = "Module";         #module directory name (without number)
 
 #my $srcSuffix  = "AT";
 my $srcSuffix = "AT";
-my $dstSuffix = "AT_IC_AG350_TR280_LG1200";
+my $dstSuffix = "AT_AG350_TR280_LG1200";
 
 #my $selection_modules = "1";
 my $selection_modules = "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40";
@@ -30,7 +30,7 @@ foreach my $file ( &getSelectionFilenames( $selection_modules, $selection_slabs,
     # -- place of asic-wise modifications --
     &setGainThr(\@spiroc_sc,350);
     &setGlobalTrigThr(\@spiroc_sc,280);
-    &setSwitchTdc(\@spiroc_sc,1); #switches off the TDC
+    #&setSwitchTdc(\@spiroc_sc,1); #switches off the TDC
 
     for my $ch ( 0 .. 35 ) {
         # -- place of channel-wise modifications --
