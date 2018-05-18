@@ -1,4 +1,8 @@
 #!/usr/bin/perl
+# takes a reference set of slowcontrols and manipulates bits of them
+# to copy to Frankenstein, use command:
+# scp -r output/Module* calice@192.168.1.11:C:\\Users\\calice\\Desktop\\cosmics_slowcontrols\\
+
 use strict;
 use warnings;
 use File::Basename;
@@ -7,12 +11,12 @@ use File::Path qw/make_path/;
 #my $baseSrcDir        = "/home/kvas/pool/SPIROC2E-SC/reference";
 #my $baseSrcDir = "/home/calice/TB2018/mount_frankenstein/C/Users/calice/Desktop/cosmics_slowcontrols";    #source directory with module directories. no "/" at the end!
 my $baseSrcDir = "./reference";
-my $baseDstDir = "./output";       #output destination directories
+my $baseDstDir = "./output_AT_PP";       #output destination directories
 my $dirNames   = "Module";         #module directory name (without number)
 
 #my $srcSuffix  = "AT";
 my $srcSuffix = "AT";
-my $dstSuffix = "AT_AG350_TR280_LG1200";
+my $dstSuffix = "AT_AG350_TR260_LG1200_PP";
 
 #my $selection_modules = "1";
 my $selection_modules = "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40";
@@ -29,13 +33,13 @@ foreach my $file ( &getSelectionFilenames( $selection_modules, $selection_slabs,
 
     # -- place of asic-wise modifications --
     &setGainThr(\@spiroc_sc,350);
-    &setGlobalTrigThr(\@spiroc_sc,280);
-    #&setSwitchTdc(\@spiroc_sc,1); #switches off the TDC
+    &setGlobalTrigThr(\@spiroc_sc,260);
+    #&setSwitchTdc(\@spiroc_sc,1); #switches off the TDC for _IC runs
+    &setHGSlowShaperPPDisable(\@spiroc_sc,1); #disables powerpulsing for HG preamp
 
     for my $ch ( 0 .. 35 ) {
         # -- place of channel-wise modifications --
 	&setLGPreamp(\@spiroc_sc,$ch,48); #48 is 1200fF
-
         #print &getDiscrChanMask( \@spiroc_sc, $ch );
         #print "Idac ch", $ch, "=", &getIdac( \@spiroc_sc, $ch ), " enabled=", &getIdacEnabled( \@spiroc_sc, $ch ), "\n ";
         #setHGPreamp( \@spiroc_sc, $ch, 23 );
@@ -274,6 +278,12 @@ sub getSwitchTdc { return &getIntValue( $_[0], 958 , 1 ); }
 #param SC,value (0=TDC will be converted, 1=other gain will be converted)
 sub setSwitchTdc {&setIntValue( $_[0], 958, 1,$_[1] ); }
 
+#param: SC
+sub getHGSlowShaperPPDisable {return &getIntValue( $_[0], 911 , 1 );}
+
+#param SC,value (0= High gain preamplifier will enter powerpulsing, 1=powerpulsing disabled)
+sub setHGSlowShaperPPDisable{&setIntValue( $_[0], 911, 1,$_[1] );}
+    
 #Labview Register Name	bits	Register description	Subadd
 #GC: sw_ramp_on_adc	1		0
 #NC	1	NC	1
