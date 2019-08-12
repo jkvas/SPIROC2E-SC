@@ -10,13 +10,13 @@ use File::Path qw/make_path/;
 
 #my $baseSrcDir        = "/home/kvas/pool/SPIROC2E-SC/reference";
 #my $baseSrcDir = "/home/calice/TB2018/mount_frankenstein/C/Users/calice/Desktop/cosmics_slowcontrols";    #source directory with module directories. no "/" at the end!
-my $baseSrcDir = "./reference";
-my $baseDstDir = "./output_AT_PP";       #output destination directories
+my $baseSrcDir = "./reference2";
+my $baseDstDir = "./ILC_mode";       #output destination directories
 my $dirNames   = "Module";         #module directory name (without number)
 
 #my $srcSuffix  = "AT";
 my $srcSuffix = "AT";
-my $dstSuffix = "AT_AG350_TR260_LG1200_PP";
+my $dstSuffix = "ILC_AT";
 
 #my $selection_modules = "1";
 my $selection_modules = "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40";
@@ -31,15 +31,33 @@ foreach my $file ( &getSelectionFilenames( $selection_modules, $selection_slabs,
     my @spiroc_sc = &load_sc($file);   #loads the SC bitstream
     print $file, " -> ", &getOutFilename($file), "\n";    #print source and output filenames with paths
 
-    # -- place of asic-wise modifications --
-    &setGainThr(\@spiroc_sc,350);
-    &setGlobalTrigThr(\@spiroc_sc,260);
-    #&setSwitchTdc(\@spiroc_sc,1); #switches off the TDC for _IC runs
-    &setHGSlowShaperPPDisable(\@spiroc_sc,1); #disables powerpulsing for HG preamp
+    # -- place of asi c-wise modifications --
 
+    # AT settings 
+    # &setGainThr(\@spiroc_sc,350);
+    # &setGlobalTrigThr(\@spiroc_sc,260);
+    # &setSwitchTdc(\@spiroc_sc,1); #switches off the TDC for _IC runs
+    # &setHGSlowShaperPPDisable(\@spiroc_sc,1); #disables powerpulsing for HG preamp
+    # &setLGSlowShaperPPDisable(\@spiroc_sc,1); #disables powerpulsing for LG preamp
+    # &setScaPPDisable(\@spiroc_sc,1); #disables powerpulsing for the SCA
+    &setTdcRampSlope(\@spiroc_sc,0); #0=fast tdc ramp
+    
+    # ET settings 
+    # &setGainThr(\@spiroc_sc,550);
+    # &setGlobalTrigThr(\@spiroc_sc,400);
+    # &setSwitchTdc(\@spiroc_sc,1); #switches off the TDC for _IC runs
+    # &setAutoGainDisabled(\@spiroc_sc,1); #switches off the TDC for _IC runs
+    # &setTrigExtOr36(\@spiroc_sc,1);# set Trig_ext (OR36) for AT
+    # &setHoldTrigger(\@spiroc_sc,28);
+    # &setHoldValid(\@spiroc_sc,28);
+    # &setHoldRst(\@spiroc_sc,28);
+    # &setHGSlowShaperPPDisable(\@spiroc_sc,1); #disables powerpulsing for HG preamp
+    # &setLGSlowShaperPPDisable(\@spiroc_sc,1); #disables powerpulsing for LG preamp
+    # &setScaPPDisable(\@spiroc_sc,1); #disables powerpulsing for the SCA
+   
     for my $ch ( 0 .. 35 ) {
         # -- place of channel-wise modifications --
-	&setLGPreamp(\@spiroc_sc,$ch,48); #48 is 1200fF
+	#&setLGPreamp(\@spiroc_sc,$ch,48); #48 is 1200fF
         #print &getDiscrChanMask( \@spiroc_sc, $ch );
         #print "Idac ch", $ch, "=", &getIdac( \@spiroc_sc, $ch ), " enabled=", &getIdacEnabled( \@spiroc_sc, $ch ), "\n ";
         #setHGPreamp( \@spiroc_sc, $ch, 23 );
@@ -284,6 +302,37 @@ sub getHGSlowShaperPPDisable {return &getIntValue( $_[0], 911 , 1 );}
 #param SC,value (0= High gain preamplifier will enter powerpulsing, 1=powerpulsing disabled)
 sub setHGSlowShaperPPDisable{&setIntValue( $_[0], 911, 1,$_[1] );}
     
+#param: SC
+sub getLGSlowShaperPPDisable {return &getIntValue( $_[0], 906 , 1 );}
+
+#param SC,value (0= Low gain preamplifier will enter powerpulsing, 1=powerpulsing disabled)
+sub setLGSlowShaperPPDisable{&setIntValue( $_[0], 906, 1,$_[1] );}
+
+#param: SC
+sub getScaPPDisable  {return &getIntValue( $_[0], 920 , 1 );}
+
+#param SC,value (0=SCA will enter powerpulsing, 1=powerpulsing disabled)
+sub setScaPPDisable{&setIntValue( $_[0], 920, 1,$_[1] );}
+
+#param: SC
+sub getAutoGainDisabled{return &getIntValue( $_[0], 955 , 1 );}
+
+#param SC,value (1=autogain is disabled (for ET), 0=autogain enabled (for AT))
+sub setAutoGainDisabled{&setIntValue( $_[0], 955, 1,$_[1] );}
+
+#param: SC
+sub getTrigExtOr36 {&getIntValue( $_[0], 1 , 1 );}
+
+#param SC,value (1=trig_ext (ET), 0=disabled (AT))
+sub setTrigExtOr36{&setIntValue( $_[0], 1, 1,$_[1] );}
+
+#param: SC
+sub getTdcRampSlope {&getIntValue( $_[0], 950 , 1 );}
+
+#param SC,value (1=slow, 0=fast)
+sub setTdcRampSlope{&setIntValue( $_[0], 950, 1,$_[1] );}
+
+
 #Labview Register Name	bits	Register description	Subadd
 #GC: sw_ramp_on_adc	1		0
 #NC	1	NC	1
@@ -341,7 +390,7 @@ sub setHGSlowShaperPPDisable{&setIntValue( $_[0], 911, 1,$_[1] );}
 #GC : Auto Gain	1	 Auto gain selection (active low)	956
 #GC : Gain Select	1	 Forces the gain value when auto gain selection is OFF	957
 #EC : ADC Ext Input	1	 External ADC signal input	958
-#GC : Switch TDC On	1	 Switch for time signal charge signal readout / high gain and low gain charge	959
+#GC : Switch TD   C On	1	 Switch for time signal charge signal readout / high gain and low gain charge	959
 #DM : Discriminator Mask	36	 Allows to Mask Discriminator (channel 35 to 0)	995
 #EN : Discri Delay Vref  + I source (Trigger)	1		996
 #PP: Discri Delay Vref  + I source (Trigger)	1	 Enable reference voltage of discri delay + current source power pulsing	997
