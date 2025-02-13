@@ -57,7 +57,7 @@ foreach my $file ( &getSelectionFilenames( $selection_modules, $selection_slabs,
     # &setLGSlowShaperPPDisable(\@spiroc_sc,1); #disables powerpulsing for LG preamp
     # &setScaPPDisable(\@spiroc_sc,1); #disables powerpulsing for the SCA
    
-    print "ChipID ",&getChipID(\@spiroc_sc),"\tGlobal_trigger_threshold ", &getGlobalTrigThr( \@spiroc_sc), "\n ";
+    print "ChipID ",&getChipID(\@spiroc_sc),"\tGlobal_trigger_threshold ", &getGlobalTrigThr( \@spiroc_sc), "\n";
     for my $ch ( 0 .. 35 ) {
         # -- place of channel-wise modifications --
 	#&setLGPreamp(\@spiroc_sc,$ch,48); #48 is 1200fF
