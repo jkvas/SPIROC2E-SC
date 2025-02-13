@@ -10,7 +10,7 @@ use File::Path qw/make_path/;
 
 #my $baseSrcDir        = "/home/kvas/pool/SPIROC2E-SC/reference";
 #my $baseSrcDir = "/home/calice/TB2018/mount_frankenstein/C/Users/calice/Desktop/cosmics_slowcontrols";    #source directory with module directories. no "/" at the end!
-my $baseSrcDir = "./reference2";
+my $baseSrcDir = "./R69589";
 my $baseDstDir = "./ILC_mode";       #output destination directories
 my $dirNames   = "Module";         #module directory name (without number)
 
@@ -18,18 +18,20 @@ my $dirNames   = "Module";         #module directory name (without number)
 my $srcSuffix = "AT";
 my $dstSuffix = "ILC_AT";
 
-#my $selection_modules = "1";
-my $selection_modules = "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40";
-my $selection_slabs   = "2,3";
+my $selection_modules = "1,2,3";
+#my $selection_modules = "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40";
+my $selection_slabs   = "2";
+#my $selection_slabs   = "2,3";
 
 #my $selection_asics = "01,02";
-my $selection_asics = "01,02,03,04,05,06,07,08";
+my $selection_asics = "01,02,03,04";
+#my $selection_asics = "01,02,03,04,05,06,07,08";
 my $overwriting     = 0;                           #do not modify from 0, otherwise will overwrite without single question
 
 #following loop iterates over ASIC files
 foreach my $file ( &getSelectionFilenames( $selection_modules, $selection_slabs, $selection_asics ) ) {    #loop through all ASIC files
     my @spiroc_sc = &load_sc($file);   #loads the SC bitstream
-    print $file, " -> ", &getOutFilename($file), "\n";    #print source and output filenames with paths
+    print $file, "\t"; #" -> ", &getOutFilename($file), "\n";    #print source and output filenames with paths
 
     # -- place of asi c-wise modifications --
 
@@ -40,7 +42,7 @@ foreach my $file ( &getSelectionFilenames( $selection_modules, $selection_slabs,
     # &setHGSlowShaperPPDisable(\@spiroc_sc,1); #disables powerpulsing for HG preamp
     # &setLGSlowShaperPPDisable(\@spiroc_sc,1); #disables powerpulsing for LG preamp
     # &setScaPPDisable(\@spiroc_sc,1); #disables powerpulsing for the SCA
-    &setTdcRampSlope(\@spiroc_sc,0); #0=fast tdc ramp
+ #   &setTdcRampSlope(\@spiroc_sc,0); #0=fast tdc ramp
     
     # ET settings 
     # &setGainThr(\@spiroc_sc,550);
@@ -55,16 +57,18 @@ foreach my $file ( &getSelectionFilenames( $selection_modules, $selection_slabs,
     # &setLGSlowShaperPPDisable(\@spiroc_sc,1); #disables powerpulsing for LG preamp
     # &setScaPPDisable(\@spiroc_sc,1); #disables powerpulsing for the SCA
    
+    print "ChipID ",&getChipID(\@spiroc_sc),"\tGlobal_trigger_threshold ", &getGlobalTrigThr( \@spiroc_sc), "\n ";
     for my $ch ( 0 .. 35 ) {
         # -- place of channel-wise modifications --
 	#&setLGPreamp(\@spiroc_sc,$ch,48); #48 is 1200fF
-        #print &getDiscrChanMask( \@spiroc_sc, $ch );
-        #print "Idac ch", $ch, "=", &getIdac( \@spiroc_sc, $ch ), " enabled=", &getIdacEnabled( \@spiroc_sc, $ch ), "\n ";
+        # print &getDiscrChanMask( \@spiroc_sc, $ch );
+        # print "Idac ch", $ch, "=", &getIdac( \@spiroc_sc, $ch ), " enabled=", &getIdacEnabled( \@spiroc_sc, $ch ), "\n ";
+	
         #setHGPreamp( \@spiroc_sc, $ch, 23 );
         #setLGPreamp( \@spiroc_sc, $ch, 23 );
         #setPreampDisabled( \@spiroc_sc, $ch, 0 );      
     }
-    &write_sc( &getOutFilename($file), @spiroc_sc ); # write the SC to the file (will ask to overwrite);
+#    &write_sc( &getOutFilename($file), @spiroc_sc ); # write the SC to the file (will ask to overwrite);
 }
 
 # --internal functions --
